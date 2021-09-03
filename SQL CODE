@@ -1,0 +1,102 @@
+-- Exploring 'NYC Citi Bike Trips', Y. Semenina
+-- Skills used: Joins, CTE's, Temp Tables, Aggregate Functions, Creating Views, Converting Data Types
+ 
+SELECT * FROM `bigquery-public-data.new_york_citibike.citibike_trips` limit 10;
+ 
+--10 longest trips, trip duration converted from seconds in the original data to hours and rounded
+SELECT starttime, stoptime, ROUND(tripduration/3600) as trip_duration_hours
+FROM `bigquery-public-data.new_york_citibike.citibike_trips`
+ORDER BY 3 DESC
+LIMIT 10;
+
+--checking if tripduration is calculated correctly in the table
+SELECT starttime, stoptime, tripduration, (stoptime - starttime)*3600 AS calculated_tripduration
+FROM `bigquery-public-data.new_york_citibike.citibike_trips`
+LIMIT 10;
+ 
+--3 most popular start station names
+SELECT start_station_name, start_station_latitude, start_station_longitude, COUNT(*) AS num_trips
+FROM `bigquery-public-data.new_york.citibike_trips`
+GROUP BY 1, 2, 3
+ORDER BY num_trips DESC
+LIMIT 3;
+ 
+--different user types and their count
+SELECT usertype, COUNT(*) as count
+FROM `bigquery-public-data.new_york.citibike_trips`
+GROUP BY usertype
+ORDER BY 2 DESC;
+ 
+--male vs female subscribers
+SELECT gender, COUNT(*) as count
+FROM `bigquery-public-data.new_york.citibike_trips`
+GROUP BY gender
+ORDER BY count DESC;
+ 
+--What are the top routes by women in 2015?
+SELECT CONCAT(start_station_name, " to ", end_station_name) AS route, COUNT(*) AS num_trips
+FROM `bigquery-public-data.new_york.citibike_trips`
+WHERE gender = "female" AND CAST(starttime AS string) LIKE '2015%'
+GROUP BY start_station_name, end_station_name
+ORDER BY num_trips DESC
+LIMIT 5;
+ 
+--What are the top routes by men in 2015?
+SELECT CONCAT(start_station_name, " to ", end_station_name) AS route, COUNT(*) AS num_trips
+FROM `bigquery-public-data.new_york.citibike_trips`
+WHERE gender = "male" AND CAST(starttime AS string) LIKE '2015%'
+GROUP BY start_station_name, end_station_name
+ORDER BY num_trips DESC
+LIMIT 5;
+ 
+--who tends to buy 'customer' (paid) subscription more?
+SELECT gender, usertype, COUNT(*) as count
+FROM `bigquery-public-data.new_york.citibike_trips`
+WHERE usertype = 'Customer'
+GROUP BY 1,2
+ORDER BY 3 DESC;
+ 
+--different age groups compared
+SELECT
+   SUM(CASE WHEN (2021-birth_year) < 18 THEN 1 ELSE 0 END) AS under_18,
+   SUM(CASE WHEN (2021-birth_year) BETWEEN 18 AND 35 THEN 1 ELSE 0 END) AS between_18_35,
+   SUM(CASE WHEN (2021-birth_year) >35 THEN 1 ELSE 0 END) AS older_than_35
+FROM `bigquery-public-data.new_york.citibike_trips`;
+ 
+--3 most popular bike ids and how many times they were used
+SELECT bikeid, COUNT (*) AS times_used
+FROM `bigquery-public-data.new_york.citibike_trips`
+GROUP BY bikeid
+ORDER BY times_used DESC
+LIMIT 3;
+
+--selecting all oldest users so we could offer them a special promo, excluding NULL values
+SELECT birth_year, COUNT(*) as how_many_users
+FROM `bigquery-public-data.new_york.citibike_trips`
+WHERE birth_year IS NOT NULL
+GROUP BY birth_year
+ORDER BY birth_year ASC 
+LIMIT 1;
+
+--selecting all youngest users so we could offer them a special promo
+SELECT birth_year, COUNT(*) as how_many_users
+FROM `bigquery-public-data.new_york.citibike_trips`
+GROUP BY birth_year
+ORDER BY birth_year DESC
+LIMIT 1;
+
+--first viewing all NULL values in the 'birth_year' (4055301)
+SELECT birth_year, COUNT(*) as how_many_users
+FROM `bigquery-public-data.new_york.citibike_trips`
+WHERE birth_year IS NULL
+GROUP BY birth_year
+ORDER BY birth_year ASC;
+
+--and then replacing all NULL values with 'not specified by customer'
+SELECT birth_year, IFNULL(NULL, 'not specified by customer') as new_birth_year
+FROM `bigquery-public-data.new_york.citibike_trips`
+WHERE birth_year IS NULL
+ORDER BY birth_year ASC;
+--LIMIT 10;
+
+
